@@ -1,0 +1,34 @@
+{
+  "413287": {
+    "type": "debit",
+    "scheme": "visa",
+    "brand": "Visa",
+    "country": "JP",
+    "bank": "Japan Bank"
+  },
+  "4": {
+    "type": "credit",
+    "scheme": "visa",
+    "brand": "Visa"
+  },
+  "5": {
+    "type": "credit",
+    "scheme": "mastercard",
+    "brand": "Mastercard"
+  },
+  "6": {
+    "type": "debit",
+    "scheme": "discover",
+    "brand": "Discover"
+  },
+  "34": {
+    "type": "credit",
+    "scheme": "amex",
+    "brand": "American Express"
+  },
+  "37": {
+    "type": "credit",
+    "scheme": "amex",
+    "brand": "American Express"
+  }
+}

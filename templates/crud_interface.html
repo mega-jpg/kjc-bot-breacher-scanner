@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Generator - Fake Docs</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>👻 Fake Document Generator</h1>
+        <p class="subtitle">Generate realistic passport documents for testing purposes</p>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('docs-generator')">👻 Document</button>
+            <button class="tab" onclick="showTab('utility-bills')">💡 Utility Bills</button>
+            <button class="tab" onclick="showTab('uk-passports')">🛂 Passport</button>
+            <button class="tab" onclick="showTab('credit-cards')">💳 Credit Cards</button>
+        </div>
+
+        <div id="docs-generator" class="tab-content active">
+            <h2>🆔 Passport Document Generator</h2>
+            <div class="form-group">
+                <p class="description">Generate random passport documents with custom quantity</p>
+                
+                <label for="docs-count">Number of Docs:</label>
+                <input type="number" id="docs-count" value="10" min="1" max="100">
+                
+                <button type="button" class="btn" id="make-docs-btn" onclick="makeDocs()">
+                    🔨 Generate Docs
+                </button>
+            </div>
+        </div>
+
+        <div id="utility-bills" class="tab-content">
+            <h2>💡 Utility Bill Generator</h2>
+            <div class="form-group">
+                <p class="description">Generate realistic utility bills with random data</p>
+                
+                <label for="bill-count">Number of Bills:</label>
+                <input type="number" id="bill-count" value="10" min="1" max="100">
+                
+                <button type="button" class="btn" id="generate-bills-btn" onclick="generateUtilityBills()">
+                    💡 Generate Utility Bills
+                </button>
+            </div>
+        </div>
+
+        <div id="uk-passports" class="tab-content">
+            <h2>🛂 UK Passport Generator</h2>
+            <div class="form-group">
+                <p class="description">Generate realistic UK passports with hologram, UV layer, MRZ code</p>
+                
+                <label for="passport-count">Number of Passports:</label>
+                <input type="number" id="passport-count" value="10" min="1" max="100">
+                
+                <button type="button" class="btn" id="generate-passports-btn" onclick="generatePassports()">
+                    🛂 Generate Passports
+                </button>
+            </div>
+        </div>
+
+        <div id="credit-cards" class="tab-content">
+            <h2>💳 Credit Card & Report Generator</h2>
+            <div class="form-group">
+                <p class="description">Generate valid credit cards (BIN 414720) with Luhn algorithm and PDF credit reports</p>
+                
+                <label for="card-count">Number of Cards:</label>
+                <input type="number" id="card-count" value="10" min="1" max="100">
+                
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
+                    <button type="button" class="btn" id="generate-cards-btn" onclick="generateCreditCards()">
+                        💳 Generate Credit Cards
+                    </button>
+                    
+                    <button type="button" class="btn" id="generate-reports-btn" onclick="generateCreditReports()">
+                        📄 Generate Credit Reports
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="api-info" id="docs-result">
+            <p><em>KJC Document Services - For Testing Only</em></p>
+        </div>
+    </div>
+    
+    <script src="/static/js/script.js"></script>
+</body>
+</html>
