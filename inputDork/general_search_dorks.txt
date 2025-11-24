@@ -1,0 +1,20 @@
+site:myshopify.com inurl:/products password -inurl:apps
+site:myshopify.com "checkout" inurl:/cart
+inurl:/wc-api/v3 "woocommerce" -github -demo
+inurl:checkout/onepage "Magento" -demo -github
+site:bigcartel.com inurl:/products -inurl:help
+inurl:store/product "Shopify" payment
+inurl:/opencart "index.php?route=checkout" -demo
+site:*.mybigcommerce.com inurl:/products
+inurl:prestashop "order" -demo -forum
+site:square.site inurl:/s/ -inurl:help
+inurl:catalogsearch/result/index "add to cart" -github -demo -magento.com
+inurl:wc-ajax=add_to_cart "proceed to checkout" -wordpress.org -github
+inurl:index.php?route=product/product "add to cart" -demo -opencart.com
+inurl:id_product= "add to cart" -demo -github -prestashop.com
+intext:"index of" "local.xml" -github -pastebin
+inurl:downloader "Magento" -github -demo
+inurl:"wp-json/wc/store/products" "WooCommerce" -github
+inurl:checkout/cart/add "WooCommerce" -github
+inurl:mage/ "Magento" -github -demo
+inurl:adminer.php intitle:"Adminer" -github

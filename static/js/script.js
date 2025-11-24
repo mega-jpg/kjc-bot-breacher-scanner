@@ -455,17 +455,23 @@ async function startDorkHarvest() {
             duckduckgo: document.getElementById('engine-duckduckgo')?.checked || false,
             google: document.getElementById('engine-google')?.checked || false,
             bing: document.getElementById('engine-bing')?.checked || false,
-            yandex: document.getElementById('engine-yandex')?.checked || false
+            yandex: document.getElementById('engine-yandex')?.checked || false,
+            shodan: document.getElementById('engine-shodan')?.checked || false
         },
         dork_count: parseInt(document.getElementById('dork-count')?.value || 50),
         thread_count: parseInt(document.getElementById('thread-count')?.value || 10),
         clear_results: document.getElementById('clear-results')?.checked || false,
         use_proxies: document.getElementById('use-proxies')?.checked || false,
-        use_ua_rotation: document.getElementById('use-ua-rotation')?.checked || false
+        use_ua_rotation: document.getElementById('use-ua-rotation')?.checked || false,
+        // Pagodo hybrid features
+        use_ghdb: document.getElementById('use-ghdb')?.checked || false,
+        ghdb_category: document.getElementById('ghdb-category')?.value || 'all',
+        min_delay: parseInt(document.getElementById('min-delay')?.value || 15),
+        max_delay: parseInt(document.getElementById('max-delay')?.value || 45)
     };
     
     // Validation
-    if (!config.engines.duckduckgo && !config.engines.google && !config.engines.bing && !config.engines.yandex) {
+    if (!config.engines.duckduckgo && !config.engines.google && !config.engines.bing && !config.engines.yandex && !config.engines.shodan) {
         showResult('docs-result', '❌ Please select at least one search engine', true);
         return;
     }
@@ -605,5 +611,72 @@ function resetHarvestUI() {
     if (stopBtn) {
         stopBtn.disabled = true;
         stopBtn.innerHTML = '⛔ Stop Harvester';
+    }
+}
+
+// Toggle GHDB options visibility and load GHDB info
+document.addEventListener('DOMContentLoaded', function() {
+    const ghdbCheckbox = document.getElementById('use-ghdb');
+    const ghdbOptions = document.getElementById('ghdb-options');
+    
+    if (ghdbCheckbox && ghdbOptions) {
+        ghdbCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                ghdbOptions.style.display = 'block';
+                loadGHDBInfo(); // Load info when checkbox is checked
+            } else {
+                ghdbOptions.style.display = 'none';
+            }
+        });
+    }
+    
+    // Toggle Shodan info visibility
+    const shodanCheckbox = document.getElementById('engine-shodan');
+    const shodanInfo = document.getElementById('shodan-info');
+    
+    if (shodanCheckbox && shodanInfo) {
+        shodanCheckbox.addEventListener('change', function() {
+            shodanInfo.style.display = this.checked ? 'block' : 'none';
+        });
+    }
+});
+
+async function loadGHDBInfo() {
+    const infoDiv = document.getElementById('ghdb-info');
+    if (!infoDiv) return;
+    
+    infoDiv.innerHTML = '<p style="margin: 0; color: #888;">⏳ Loading...</p>';
+    
+    try {
+        const response = await fetch('/api/ghdb/info');
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        const data = await response.json();
+        
+        if (!data.exists) {
+            infoDiv.innerHTML = `
+                <p style="margin: 0; color: #ff6b6b;">❌ GHDB database not found</p>
+                <p style="margin: 5px 0 0 0; color: #888;">Run in terminal: <code style="background: #1a1a2e; padding: 2px 6px; border-radius: 3px;">${data.message.split(': ')[1]}</code></p>
+            `;
+        } else {
+            const ageText = data.age_days > 0 
+                ? `${data.age_days} day${data.age_days > 1 ? 's' : ''} ago`
+                : `${data.age_hours} hour${data.age_hours > 1 ? 's' : ''} ago`;
+            
+            const ageColor = data.age_days > 30 ? '#ff6b6b' : '#4CAF50';
+            
+            infoDiv.innerHTML = `
+                <p style="margin: 0; color: ${ageColor};">
+                    📅 Last updated: ${data.last_updated} (${ageText})
+                </p>
+                <p style="margin: 5px 0 0 0; color: #888;">
+                    📊 ${data.dork_count.toLocaleString()} dorks available
+                </p>
+                ${data.age_days > 30 ? `<p style="margin: 5px 0 0 0; color: #ff6b6b; font-size: 10px;">⚠️ Consider updating: <code style="background: #1a1a2e; padding: 2px 6px; border-radius: 3px;">${data.cli_command}</code></p>` : ''}
+            `;
+        }
+    } catch (error) {
+        infoDiv.innerHTML = `<p style="margin: 0; color: #ff6b6b;">❌ Failed to load GHDB info</p>`;
     }
 }

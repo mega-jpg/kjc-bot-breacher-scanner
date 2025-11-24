@@ -23,36 +23,106 @@
             <div class="form-group">
                 <p class="description">Scan Google/Bing/Yandex with 200+ dorks, UA rotation, SOCKS5 proxies</p>
                 
-                <label for="dork-engines">Search Engines:</label>
-                <div style="margin: 10px 0;">
-                    <label style="margin-right: 15px;"><input type="checkbox" checked id="engine-duckduckgo"> ✅ DuckDuckGo</label>
-                    <label style="margin-right: 15px;"><input type="checkbox" id="engine-google"> ✅ Google (reCAPTCHA risk)</label>
-                    <label style="margin-right: 15px;"><input type="checkbox" id="engine-bing"> ✅ Bing (Cloudflare)</label>
-                    <label style="margin-right: 15px;"><input type="checkbox" id="engine-yandex"> ✅ Yandex (SmartCaptcha)</label>
+                <div style="border: 1px solid #dbdbdb; border-radius: 8px; padding: 15px; margin: 15px 0;">
+                    <label for="clear-results" style="margin: 0; color: #4CAF50; padding-left: 20px;">SEARCH ENGINES</label>
+                    <div style="margin: 10px 0;">
+                        <div style="display: grid; grid-template-columns: 50% 10%; align-items: center; gap: 10px;">
+                            <label for="engine-duckduckgo" style="margin: 0;">✅ DuckDuckGo</label>
+                            <input type="checkbox" checked id="engine-duckduckgo">
+                        </div>
+                        <div style="display: grid; grid-template-columns: 50% 10%; align-items: center; gap: 10px;">
+                            <label for="engine-google" style="margin: 0;">✅ Google (reCAPTCHA risk)</label>
+                            <input type="checkbox" id="engine-google">
+                        </div>
+                        <div style="display: grid; grid-template-columns: 50% 10%; align-items: center; gap: 10px;">
+                            <label for="engine-bing" style="margin: 0;">✅ Bing (Cloudflare)</label>
+                            <input type="checkbox" id="engine-bing">
+                        </div>
+                        <div style="display: grid; grid-template-columns: 50% 10%; align-items: center; gap: 10px;">
+                            <label for="engine-yandex" style="margin: 0;">✅ Yandex (SmartCaptcha)</label>
+                            <input type="checkbox" id="engine-yandex">
+                        </div>
+                        <div style="display: grid; grid-template-columns: 50% 10%; align-items: center; gap: 10px;">
+                            <label for="engine-shodan" style="margin: 0;">✅ Shodan (Requires API Key)</label>
+                            <input type="checkbox" id="engine-shodan">
+                        </div>
+                    </div>
+                    <div id="shodan-info" style="margin-top: 10px; padding: 10px; background: #2a2a3e; border-radius: 4px; font-size: 11px; display: none;">
+                        <p style="margin: 0; color: #ff6b6b;">⚠️ Shodan requires API key in .env file</p>
+                        <p style="margin: 5px 0 0 0; color: #888;">Add: <code style="background: #1a1a2e; padding: 2px 6px; border-radius: 3px;">SHODAN_API_KEY=your_key_here</code></p>
+                        <p style="margin: 5px 0 0 0; color: #888;">Get key at: <a href="https://account.shodan.io/" target="_blank" style="color: #4CAF50;">https://account.shodan.io/</a></p>
+                    </div>
                 </div>
-                
-                <label for="dork-count">Number of Dorks to Use:</label>
-                <input type="number" id="dork-count" value="20" min="1" max="200">
-                
-                <label for="thread-count">Threads (VPS mode):</label>
-                <input type="number" id="thread-count" value="5" min="1" max="50">
-                
-                <p style="color: #888; font-size: 13px; margin: 10px 0;">
-                    ℹ️ Auto-stop enabled: Stops when no new unique shops found (max 100 pages/dork)
-                </p>
-                
-                <label style="margin-top: 15px;">
-                    <input type="checkbox" checked id="clear-results"> Clear results before harvest
-                </label>
-                
-                <label style="margin-top: 5px;">
-                    <input type="checkbox" id="use-proxies"> Use SOCKS5 Proxy Rotation
-                </label>
-                
-                <label style="margin-top: 5px;">
-                    <input type="checkbox" checked id="use-ua-rotation"> Use User-Agent Rotation
-                </label>
-                
+                <div style="border: 1px solid #dbdbdb; border-radius: 8px; padding: 15px; margin: 15px 0;">
+                    <label for="clear-results" style="margin: 0; color: #4CAF50; padding-left: 20px;">DORK CONFIGURATION</label>
+                    <label for="dork-count" style="margin-top: 10px;">Number of Dorks to Use:</label>
+                    <input type="number" id="dork-count" value="20" min="1" max="200">
+                    
+                    <div style="margin: auto 0; padding: 15px 0; display: grid; grid-template-columns: 50% 10%; align-items: center; gap: 10px;">
+                        <label for="use-ghdb" style="margin: 0;">✅ Use GHDB Dorks (8,000+ from Pagodo)</label>
+                        <input type="checkbox" id="use-ghdb"> 
+                    </div>
+                    <div style="padding: 0 0 15px 0;">
+                        <div id="ghdb-options" style="margin-top: 10px; display: none;">
+                            <label for="ghdb-category">GHDB Category:</label>
+                            <select id="ghdb-category" style="width: 100%; padding: 8px 0; background: gray; color: white; border: 1px solid #444; border-radius: 4px;">
+                                <option value="all">All Categories (8,000+ dorks)</option>
+                                <option value="footholds">Footholds</option>
+                                <option value="usernames">Files Containing Usernames</option>
+                                <option value="sensitive_directories">Sensitive Directories</option>
+                                <option value="web_server_detection">Web Server Detection</option>
+                                <option value="vulnerable_files">Vulnerable Files</option>
+                                <option value="vulnerable_servers">Vulnerable Servers</option>
+                                <option value="error_messages">Error Messages</option>
+                                <option value="juicy_info">Files Containing Juicy Info</option>
+                                <option value="passwords">Files Containing Passwords</option>
+                                <option value="shopping_info">Sensitive Shopping Info</option>
+                                <option value="network_data">Network/Vulnerability Data</option>
+                                <option value="login_portals">Pages Containing Login Portals</option>
+                                <option value="online_devices">Various Online Devices</option>
+                                <option value="advisories">Advisories & Vulnerabilities</option>
+                            </select>
+                            <p style="color: #888; font-size: 12px; margin: 5px 0;">⚠️ Warning: 'All Categories' may take hours/days to complete</p>
+                            <div id="ghdb-info" style="margin-top: 10px; padding: 10px; background: #fff9a4; border-radius: 4px; font-size: 11px;">
+                                <p style="margin: 0; color: #888;">📅 Loading GHDB info...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div style="border: 1px solid #dbdbdb; border-radius: 8px; padding: 15px; margin: 15px 0;">
+                    <label for="clear-results" style="margin: 0; color: #4CAF50; padding-left: 20px;">PERFORMANCE SETTINGS</label>
+                    <label for="thread-count" style="margin-top: 10px;">Threads (VPS mode):</label>
+                    <input type="number" id="thread-count" value="5" min="1" max="50">
+                    
+                    <div style="margin: 15px 0;">
+                        <label for="min-delay">Min Delay Between Requests (seconds):</label>
+                        <input type="number" id="min-delay" value="15" min="1" max="120">
+                        
+                        <label for="max-delay" style="margin-top: 10px;">Max Delay Between Requests (seconds):</label>
+                        <input type="number" id="max-delay" value="45" min="1" max="180">
+                        <p style="color: #888; font-size: 12px; margin: 5px 0;">ℹ️ Random delays help avoid detection (Pagodo-style)</p>
+                    </div>            
+                    <p style="color: #888; font-size: 13px; margin: 10px 0;">
+                        ℹ️ Auto-stop enabled: Stops when no new unique shops found (max 100 pages/dork)
+                    </p>
+                </div>
+                <div style="border: 1px solid #dbdbdb; border-radius: 8px; padding: 15px; margin: 15px 0;">
+                    <label for="clear-results" style="margin: 0; color: #4CAF50; padding-left: 20px;">OPTION</label>
+                    <div style="margin-top: 15px; display: grid; grid-template-columns: 50% 10%; align-items: center; gap: 10px;">
+                        <label for="clear-results" style="margin: 0;">Clear results before harvest</label>
+                        <input type="checkbox" id="clear-results">
+                    </div>
+                    
+                    <div style="margin-top: 5px; display: grid; grid-template-columns: 50% 10%; align-items: center; gap: 10px;">
+                        <label for="use-proxies" style="margin: 0;">Use SOCKS5 Proxy Rotation</label>
+                        <input type="checkbox" id="use-proxies">
+                    </div>
+                    
+                    <div style="margin-top: 5px; display: grid; grid-template-columns: 50% 10%; align-items: center; gap: 10px;">
+                        <label for="use-ua-rotation" style="margin: 0;">Use User-Agent Rotation</label>
+                        <input type="checkbox" checked id="use-ua-rotation">
+                    </div>
+                </div>
                 <div style="margin-top: 20px;">
                     <button type="button" class="btn" id="start-harvest-btn" onclick="startDorkHarvest()">
                         🚀 Start Harvesting
