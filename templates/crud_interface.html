@@ -8,27 +8,73 @@
 </head>
 <body>
     <div class="container">
-        <h1>👻 Fake Document Generator</h1>
-        <p class="subtitle">Generate realistic passport documents for testing purposes</p>
+        <h1>🔍 Dork Harvester 2025</h1>
+        <p class="subtitle">Multi-engine shop scanner with proxy rotation & real-time harvesting</p>
         
         <div class="tabs">
-            <button class="tab active" onclick="showTab('docs-generator')">👻 Document</button>
+            <button class="tab active" onclick="showTab('docs-generator')">🔍 Dork Harvester</button>
             <button class="tab" onclick="showTab('utility-bills')">💡 Utility Bills</button>
             <button class="tab" onclick="showTab('uk-passports')">🛂 Passport</button>
             <button class="tab" onclick="showTab('credit-cards')">💳 Credit Cards</button>
         </div>
 
         <div id="docs-generator" class="tab-content active">
-            <h2>🆔 Passport Document Generator</h2>
+            <h2>🎯 Multi-Engine Dork Scanner</h2>
             <div class="form-group">
-                <p class="description">Generate random passport documents with custom quantity</p>
+                <p class="description">Scan Google/Bing/Yandex with 200+ dorks, UA rotation, SOCKS5 proxies</p>
                 
-                <label for="docs-count">Number of Docs:</label>
-                <input type="number" id="docs-count" value="10" min="1" max="100">
+                <label for="dork-engines">Search Engines:</label>
+                <div style="margin: 10px 0;">
+                    <label style="margin-right: 15px;"><input type="checkbox" checked id="engine-duckduckgo"> ✅ DuckDuckGo</label>
+                    <label style="margin-right: 15px;"><input type="checkbox" id="engine-google"> ✅ Google (reCAPTCHA risk)</label>
+                    <label style="margin-right: 15px;"><input type="checkbox" id="engine-bing"> ✅ Bing (Cloudflare)</label>
+                    <label style="margin-right: 15px;"><input type="checkbox" id="engine-yandex"> ✅ Yandex (SmartCaptcha)</label>
+                </div>
                 
-                <button type="button" class="btn" id="make-docs-btn" onclick="makeDocs()">
-                    🔨 Generate Docs
-                </button>
+                <label for="dork-count">Number of Dorks to Use:</label>
+                <input type="number" id="dork-count" value="20" min="1" max="200">
+                
+                <label for="thread-count">Threads (VPS mode):</label>
+                <input type="number" id="thread-count" value="5" min="1" max="50">
+                
+                <p style="color: #888; font-size: 13px; margin: 10px 0;">
+                    ℹ️ Auto-stop enabled: Stops when no new unique shops found (max 100 pages/dork)
+                </p>
+                
+                <label style="margin-top: 15px;">
+                    <input type="checkbox" checked id="clear-results"> Clear results before harvest
+                </label>
+                
+                <label style="margin-top: 5px;">
+                    <input type="checkbox" id="use-proxies"> Use SOCKS5 Proxy Rotation
+                </label>
+                
+                <label style="margin-top: 5px;">
+                    <input type="checkbox" checked id="use-ua-rotation"> Use User-Agent Rotation
+                </label>
+                
+                <div style="margin-top: 20px;">
+                    <button type="button" class="btn" id="start-harvest-btn" onclick="startDorkHarvest()">
+                        🚀 Start Harvesting
+                    </button>
+                    
+                    <button type="button" class="btn" id="stop-harvest-btn" onclick="stopDorkHarvest()" style="background: #dc3545; margin-left: 10px;">
+                        ⛔ Stop Harvester
+                    </button>
+                </div>
+                
+                <div id="harvest-stats" style="margin-top: 20px; padding: 15px; background: gray; border-radius: 8px; display: none;">
+                    <h3 style="margin-top: 0;">📊 Live Statistics</h3>
+                    <p>🔴 Status: <span id="status">Idle</span></p>
+                    <p>🎯 Shops Found: <span id="shops-found">0</span></p>
+                    <p>📡 Active Threads: <span id="active-threads">0</span></p>
+                    <p>🌐 Current Engine: <span id="current-engine">-</span></p>
+                    <p>⏱️ Runtime: <span id="runtime">00:00:00</span></p>
+                </div>
+                
+                <div id="harvest-results" style="margin-top: 15px; max-height: 300px; overflow-y: auto; background: gray; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 12px; display: none;">
+                    <!-- Real-time shop URLs appear here -->
+                </div>
             </div>
         </div>
 

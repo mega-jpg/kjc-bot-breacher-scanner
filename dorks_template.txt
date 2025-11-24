@@ -1,0 +1,216 @@
+# 200 DORKS 2025 - E-commerce Shop Scanner
+# Tested and working as of November 2025
+
+# Magento Dorks (30)
+inurl:catalogsearch/result/index "Magento" -inurl:github -inurl:demo
+inurl:downloader "Magento" -github
+intext:"index of" "local.xml" -github
+inurl:skin/frontend "Magento"
+inurl:admin/login "Magento Admin"
+inurl:customer/account/login "Magento"
+inurl:rest/default/V1 "Magento API"
+inurl:api/rest "Magento REST"
+inurl:mage/ "Magento" -github
+inurl:index.php/admin "Magento"
+inurl:app/etc/local.xml
+inurl:checkout/cart "Magento"
+inurl:catalog/product/view "Magento"
+inurl:catalog/category/view "Magento"
+inurl:js/mage/ "Magento"
+inurl:errors/local.xml
+inurl:skin/adminhtml/default "Magento"
+inurl:media/catalog/product "Magento"
+inurl:pub/static/version "Magento"
+inurl:setup/index.php "Magento"
+inurl:magento_version
+inurl:app/code/core/Mage
+inurl:downloader/index.php
+inurl:rss/catalog/new "Magento"
+inurl:wishlist/index "Magento"
+inurl:sales/order/history "Magento"
+inurl:newsletter/subscriber "Magento"
+inurl:sendfriend/product "Magento"
+inurl:review/product/list "Magento"
+inurl:reports/report/product "Magento"
+
+# WooCommerce Dorks (40)
+inurl:wc/v3/products "WooCommerce" -inurl:wordpress.org
+inurl:"wp-json/wc/store/products" "WooCommerce"
+inurl:checkout/cart/add "WooCommerce"
+inurl:shop/product "WooCommerce"
+inurl:product-category "WooCommerce"
+inurl:cart "add-to-cart"
+inurl:my-account "WooCommerce"
+inurl:checkout "WooCommerce"
+inurl:wp-content/plugins/woocommerce
+inurl:wc-api/v3 "WooCommerce"
+inurl:product-tag "WooCommerce"
+inurl:shop/page "WooCommerce"
+inurl:?add-to-cart=
+inurl:?wc-ajax=
+inurl:wp-json/wc/v3
+inurl:wc-auth/v1/authorize
+inurl:order-received "WooCommerce"
+inurl:lost-password "WooCommerce"
+inurl:customer-logout "WooCommerce"
+inurl:edit-account "WooCommerce"
+inurl:edit-address "WooCommerce"
+inurl:payment-methods "WooCommerce"
+inurl:orders "WooCommerce"
+inurl:downloads "WooCommerce"
+inurl:subscriptions "WooCommerce"
+inurl:memberships "WooCommerce"
+inurl:bookings "WooCommerce"
+inurl:product/? "add to cart"
+inurl:product-category/?
+inurl:shop/?orderby=
+inurl:?s= site:*/shop/
+inurl:cart/?removed_item=
+inurl:wc-api/auth
+inurl:?wc-ajax=get_refreshed_fragments
+inurl:?wc-ajax=add_to_cart
+inurl:?wc-ajax=checkout
+inurl:wp-json/wc/store/cart
+inurl:wp-json/wc/store/checkout
+inurl:woocommerce-subscriptions
+inurl:woocommerce-memberships
+
+# OpenCart Dorks (30)
+inurl:opencart "index.php?route=product" -inurl:demo
+inurl:index.php?route=common/home "OpenCart"
+inurl:index.php?route=account "OpenCart"
+inurl:admin "OpenCart Admin"
+inurl:index.php?route=product/product
+inurl:index.php?route=product/category
+inurl:index.php?route=product/search
+inurl:index.php?route=checkout/cart
+inurl:index.php?route=checkout/checkout
+inurl:index.php?route=account/login
+inurl:index.php?route=account/register
+inurl:index.php?route=account/account
+inurl:index.php?route=account/wishlist
+inurl:index.php?route=information/contact
+inurl:catalog/view/theme/default "OpenCart"
+inurl:admin/index.php?route=common/login
+inurl:index.php?route=product/manufacturer
+inurl:index.php?route=account/order
+inurl:index.php?route=account/download
+inurl:index.php?route=account/reward
+inurl:index.php?route=account/return
+inurl:index.php?route=account/transaction
+inurl:index.php?route=account/newsletter
+inurl:index.php?route=checkout/success
+inurl:index.php?route=checkout/failure
+inurl:index.php?route=product/special
+inurl:index.php?route=product/compare
+inurl:system/storage/upload "OpenCart"
+inurl:image/cache/ "OpenCart"
+inurl:system/library/cart "OpenCart"
+
+# PrestaShop Dorks (25)
+inurl:prestashop "id_product=" -demo
+inurl:module/ps_ "PrestaShop"
+inurl:admin-dev "PrestaShop"
+inurl:controller=product "PrestaShop"
+inurl:id_category= "PrestaShop"
+inurl:controller=cart "PrestaShop"
+inurl:controller=order "PrestaShop"
+inurl:controller=authentication
+inurl:controller=my-account
+inurl:controller=addresses
+inurl:controller=identity
+inurl:controller=history
+inurl:themes/default-bootstrap "PrestaShop"
+inurl:/modules/blocktopmenu
+inurl:/modules/blockcart
+inurl:/modules/blockwishlist
+inurl:/modules/productcomments
+inurl:controller=contact
+inurl:controller=sitemap
+inurl:controller=manufacturer
+inurl:controller=supplier
+inurl:controller=cms
+inurl:controller=search
+inurl:admin123 "PrestaShop"
+inurl:adminABC "PrestaShop"
+
+# Shopify Dorks (20)
+inurl:shopify.com/products
+inurl:myshopify.com/collections
+inurl:myshopify.com/products
+inurl:myshopify.com/cart
+inurl:myshopify.com/account
+inurl:myshopify.com/search
+inurl:myshopify.com/pages
+inurl:shopify.com/collections
+site:myshopify.com
+site:shopify.com/products
+inurl:cdn.shopify.com/s/files
+inurl:checkout.shopify.com
+inurl:shopify.com/cart
+inurl:shopify.com/account/login
+inurl:apps.shopify.com
+inurl:myshopify.com/admin
+inurl:shopify.com/policies
+inurl:shopify.com/blogs
+inurl:shopify.com/apps
+site:*.myshopify.com
+
+# Other E-commerce Platforms (25)
+inurl:bigcartel.com/product
+inurl:square.site/product
+inurl:ecwid.com/store
+inurl:wix.com/stores/
+inurl:squarespace.com/commerce
+inurl:3dcart.com
+inurl:volusion.com
+inurl:bigcommerce.com
+inurl:weebly.com/store
+inurl:godaddy.com/products
+inurl:site123.com/store
+inurl:zyro.com/ecommerce
+inurl:shift4shop.com
+inurl:sellfy.com/p/
+inurl:gumroad.com/l/
+inurl:cartloom.com
+inurl:storenvy.com
+inurl:tictail.com
+inurl:shoplo.com
+inurl:jumpseller.com
+inurl:quickbutik.com
+inurl:expandcart.com
+inurl:sellbrite.com
+inurl:vend.com
+inurl:lightspeed.com
+
+# Generic Shop Patterns (30)
+inurl:/shop/product/
+inurl:/store/item/
+inurl:/cart/add
+inurl:/checkout
+inurl:/products/
+inurl:/category/
+inurl:/product-detail/
+inurl:/add-to-cart
+inurl:/shopping-cart
+inurl:/my-account
+inurl:/order-tracking
+inurl:/wishlist
+inurl:/compare
+inurl:/search?q=
+inurl:/special-offers
+inurl:/new-arrivals
+inurl:/best-sellers
+inurl:/on-sale
+inurl:/clearance
+inurl:/brands/
+inurl:/manufacturers/
+inurl:/collections/
+inurl:/catalog/
+inurl:/store/
+site:*/checkout
+site:*/cart
+site:*/product/*
+site:*/shop/*
+site:*/store/*
+site:*/buy/*

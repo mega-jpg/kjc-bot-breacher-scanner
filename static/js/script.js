@@ -437,3 +437,173 @@ function displayCreditReports(data) {
     
     resultDiv.innerHTML = html;
 }
+
+// ==== DORK HARVESTER FUNCTIONS ====
+let harvestInterval = null;
+let harvestStartTime = null;
+let isHarvesting = false;
+
+async function startDorkHarvest() {
+    const startBtn = document.getElementById('start-harvest-btn');
+    const stopBtn = document.getElementById('stop-harvest-btn');
+    const statsDiv = document.getElementById('harvest-stats');
+    const resultsDiv = document.getElementById('harvest-results');
+    
+    // Get configuration
+    const config = {
+        engines: {
+            duckduckgo: document.getElementById('engine-duckduckgo')?.checked || false,
+            google: document.getElementById('engine-google')?.checked || false,
+            bing: document.getElementById('engine-bing')?.checked || false,
+            yandex: document.getElementById('engine-yandex')?.checked || false
+        },
+        dork_count: parseInt(document.getElementById('dork-count')?.value || 50),
+        thread_count: parseInt(document.getElementById('thread-count')?.value || 10),
+        clear_results: document.getElementById('clear-results')?.checked || false,
+        use_proxies: document.getElementById('use-proxies')?.checked || false,
+        use_ua_rotation: document.getElementById('use-ua-rotation')?.checked || false
+    };
+    
+    // Validation
+    if (!config.engines.duckduckgo && !config.engines.google && !config.engines.bing && !config.engines.yandex) {
+        showResult('docs-result', '❌ Please select at least one search engine', true);
+        return;
+    }
+    
+    // Set UI state
+    startBtn.disabled = true;
+    startBtn.innerHTML = '🔄 Harvesting...';
+    stopBtn.disabled = false;
+    statsDiv.style.display = 'block';
+    resultsDiv.style.display = 'block';
+    resultsDiv.innerHTML = '<p style="color: #00ff00;">🚀 Initializing harvester...</p>';
+    isHarvesting = true;
+    harvestStartTime = Date.now();
+    
+    try {
+        // Start harvest
+        const response = await fetch('/api/dork-harvest/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.status === 'success') {
+            document.getElementById('status').innerHTML = '<span style="color: #00ff00;">🟢 Running</span>';
+            showResult('docs-result', '✅ Dork harvester started successfully!', false);
+            
+            // Start polling for updates
+            startPollingHarvest();
+        } else {
+            throw new Error(result.message || 'Failed to start harvester');
+        }
+    } catch (error) {
+        showResult('docs-result', '❌ Error: ' + error.message, true);
+        resetHarvestUI();
+    }
+}
+
+async function stopDorkHarvest() {
+    const startBtn = document.getElementById('start-harvest-btn');
+    const stopBtn = document.getElementById('stop-harvest-btn');
+    
+    stopBtn.disabled = true;
+    stopBtn.innerHTML = '⏸️ Stopping...';
+    isHarvesting = false;
+    
+    try {
+        const response = await fetch('/api/dork-harvest/stop', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            document.getElementById('status').innerHTML = '<span style="color: #ff9500;">🟡 Stopped</span>';
+            showResult('docs-result', '✅ Harvester stopped. Total shops: ' + result.total_shops, false);
+            clearInterval(harvestInterval);
+            resetHarvestUI();
+        }
+    } catch (error) {
+        showResult('docs-result', '❌ Error stopping harvester: ' + error.message, true);
+        resetHarvestUI();
+    }
+}
+
+function startPollingHarvest() {
+    // Update stats every 2 seconds
+    harvestInterval = setInterval(async () => {
+        if (!isHarvesting) {
+            clearInterval(harvestInterval);
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/dork-harvest/status');
+            const data = await response.json();
+            
+            if (data.status === 'running') {
+                // Update stats
+                document.getElementById('shops-found').textContent = data.shops_found || 0;
+                document.getElementById('active-threads').textContent = data.active_threads || 0;
+                document.getElementById('current-engine').textContent = data.current_engine || 'N/A';
+                
+                // Update runtime
+                if (harvestStartTime) {
+                    const elapsed = Math.floor((Date.now() - harvestStartTime) / 1000);
+                    const hours = Math.floor(elapsed / 3600);
+                    const minutes = Math.floor((elapsed % 3600) / 60);
+                    const seconds = elapsed % 60;
+                    document.getElementById('runtime').textContent = 
+                        String(hours).padStart(2, '0') + ':' + 
+                        String(minutes).padStart(2, '0') + ':' + 
+                        String(seconds).padStart(2, '0');
+                }
+                
+                // Display recent shops
+                if (data.recent_shops && data.recent_shops.length > 0) {
+                    const resultsDiv = document.getElementById('harvest-results');
+                    let html = '';
+                    data.recent_shops.forEach(shop => {
+                        html = '<p style="color: #00ff00; margin: 2px 0;">[+] ' + shop + '</p>' + html;
+                    });
+                    resultsDiv.innerHTML = html + resultsDiv.innerHTML;
+                    
+                    // Keep only last 100 entries
+                    const lines = resultsDiv.querySelectorAll('p');
+                    if (lines.length > 100) {
+                        for (let i = 100; i < lines.length; i++) {
+                            lines[i].remove();
+                        }
+                    }
+                }
+            } else if (data.status === 'completed') {
+                document.getElementById('status').innerHTML = '<span style="color: #00ff00;">✅ Completed</span>';
+                isHarvesting = false;
+                clearInterval(harvestInterval);
+                showResult('docs-result', '✅ Harvesting completed! Total: ' + data.shops_found + ' shops', false);
+                resetHarvestUI();
+            }
+        } catch (error) {
+            console.error('Polling error:', error);
+        }
+    }, 2000);
+}
+
+function resetHarvestUI() {
+    const startBtn = document.getElementById('start-harvest-btn');
+    const stopBtn = document.getElementById('stop-harvest-btn');
+    
+    if (startBtn) {
+        startBtn.disabled = false;
+        startBtn.innerHTML = '🚀 Start Harvesting';
+    }
+    
+    if (stopBtn) {
+        stopBtn.disabled = true;
+        stopBtn.innerHTML = '⛔ Stop Harvester';
+    }
+}
