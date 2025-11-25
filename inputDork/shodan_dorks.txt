@@ -1,15 +1,14 @@
-http.title:"Magento" port:80,443 -github
-http.title:"WooCommerce" port:80,443
-http.component:"OpenCart" port:80,443
-http.title:"PrestaShop" port:80,443
-"http.html\":\"local.xml\"" port:80,443
-port:3306 "MySQL" "Magento"
-http.title:"Magento" "downloader"
-http.title:"WooCommerce" "wc-ajax=add_to_cart"
-http.title:"OpenCart" "route=product/product"
-http.favicon.hash:81586312  # Magento favicon
-http.title:"Magento" country:VN
-http.title:"WooCommerce" country:ID
-http.title:"Magento" org:"cloudflare"
-http.title:"Magento" ssl:"Let's Encrypt"
-http.html:"index of /app/etc" port:80
+# Shodan Free Tier Queries - Ultra Basic (No membership required)
+# Free tier is very limited - only basic text search + simple filters
+
+# Basic text search (most reliable for free tier)
+magento
+woocommerce
+opencart
+prestashop
+shopify
+"shopping cart"
+"add to cart"
+"my account"
+"admin login"
+"payment gateway"

@@ -320,9 +320,11 @@ def search_shodan(query, api_key=None, page=1):
             print(f"[SHODAN] Found {len(results)} results for query: {query[:50]}...")
             return results
         elif response.status_code == 401:
-            print("[ERROR] Invalid Shodan API key")
+            print("[ERROR] Invalid Shodan API key (401 Unauthorized)")
+        elif response.status_code == 403:
+            print(f"[ERROR] Shodan API forbidden (403): {response.text[:200]}")
         elif response.status_code == 429:
-            print("[ERROR] Shodan API rate limit exceeded")
+            print("[ERROR] Shodan API rate limit exceeded (429)")
         else:
             print(f"[ERROR] Shodan API error: {response.status_code}")
     except Exception as e:
@@ -850,13 +852,14 @@ async def start_dork_harvest(request: Dict):
         dorks_to_use = DORKS[:dork_count]
         print(f"[✓] Using custom dorks: {len(dorks_to_use)}")
     
+    # Get actual dork count for response message
+    actual_dork_count = len(dorks_to_use)
+    
     thread_count = request.get("thread_count", 10)
     # Safety: Limit threads when using many dorks
     if len(dorks_to_use) > 100 and thread_count > 5:
         thread_count = 5
         print(f"[WARNING] Large dork count ({len(dorks_to_use)}), limiting threads to {thread_count}")
-    
-    thread_count = request.get("thread_count", 10)
     
     # Start threads
     def run_harvester():
@@ -895,7 +898,7 @@ async def start_dork_harvest(request: Dict):
     
     return {
         "status": "success",
-        "message": f"Dork harvester started with {dork_count} dorks and {thread_count} threads"
+        "message": f"Dork harvester started with {actual_dork_count} dorks and {thread_count} threads"
     }
 
 @router.post("/dork-harvest/stop")
