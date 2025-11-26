@@ -83,8 +83,38 @@
                                 <option value="advisories">Advisories & Vulnerabilities</option>
                             </select>
                             <p style="color: #888; font-size: 12px; margin: 5px 0;">⚠️ Warning: 'All Categories' may take hours/days to complete</p>
-                            <div id="ghdb-info" style="margin-top: 10px; padding: 10px; background: #fff9a4; border-radius: 4px; font-size: 11px;">
+                            <div id="ghdb-info" style="margin-top: 10px; padding: 10px; background: #fff9e6; border: 1px solid #ffa500; border-radius: 4px; font-size: 11px;">
                                 <p style="margin: 0; color: #888;">📅 Loading GHDB info...</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Common Crawl Configuration -->
+                    <div style="margin: auto 0; padding: 15px 0; display: grid; grid-template-columns: 50% 10%; align-items: center; gap: 10px;">
+                        <label for="use-cc" style="margin: 0;">🌐 Use Common Crawl (300k+ shops/day)</label>
+                        <input type="checkbox" id="use-cc">
+                    </div>
+                    <div style="padding: 0 0 15px 0;">
+                        <div id="cc-options" style="margin-top: 10px; display: none;">
+                            <label for="cc-crawl-id">Crawl ID (Format: CC-MAIN-YYYY-WW):</label>
+                            <input type="text" id="cc-crawl-id" value="CC-MAIN-2025-44" placeholder="CC-MAIN-2025-44" style="width: 100%; padding: 8px; background: gray; color: white; border: 1px solid #444; border-radius: 4px;">
+                            <p style="font-size: 11px; color: #888; margin: 5px 0;">Latest crawl: November 2025. Check <a href="https://commoncrawl.org/get-started" target="_blank" style="color: #4CAF50;">commoncrawl.org</a></p>
+                            
+                            <label for="cc-max-files" style="margin-top: 10px; display: block;">Max WARC Files (1 file = ~1GB, ~50M URLs):</label>
+                            <input type="number" id="cc-max-files" value="10" min="1" max="100" style="width: 100%; padding: 8px; background: gray; color: white; border: 1px solid #444; border-radius: 4px;">
+                            <p style="font-size: 11px; color: #888; margin: 5px 0;">10 files = ~10GB download, ~50k shops. 50 files = ~50GB, ~500k shops.</p>
+                            
+                            <div style="display: grid; grid-template-columns: 50% 10%; align-items: center; gap: 10px; margin: 10px 0;">
+                                <label for="cc-threading" style="margin: 0;">Multi-threading (5 concurrent downloads)</label>
+                                <input type="checkbox" id="cc-threading" checked>
+                            </div>
+                            
+                            <div style="margin-top: 10px; padding: 10px; background: #fff9e6; border: 1px solid #ffa500; border-radius: 4px; font-size: 11px;">
+                                <p style="margin: 0; color: #ff6b6b; font-weight: bold;">⚠️ COMMON CRAWL INFO:</p>
+                                <p style="margin: 5px 0 0 0; color: #888;">• Download: ~10MB/s (10 files = 15-20 min)</p>
+                                <p style="margin: 3px 0 0 0; color: #888;">• Patterns: Magento, WooCommerce, Shopify, OpenCart</p>
+                                <p style="margin: 3px 0 0 0; color: #888;">• Free & unlimited (no API key needed)</p>
+                                <p style="margin: 3px 0 0 0; color: #888;">• Output: shops_fresh_2025_commoncrawl.txt</p>
                             </div>
                         </div>
                     </div>
@@ -140,6 +170,12 @@
                     <p>📡 Active Threads: <span id="active-threads">0</span></p>
                     <p>🌐 Current Engine: <span id="current-engine">-</span></p>
                     <p>⏱️ Runtime: <span id="runtime">00:00:00</span></p>
+                    <div id="cc-metrics" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid #444;">
+                        <p style="color: #ffa500; font-weight: bold;">🌐 Common Crawl Mining:</p>
+                        <p>📦 WARC Files: <span id="cc-progress">0 / 0</span></p>
+                        <p>⬇️ Downloaded: <span id="cc-download">0 MB</span></p>
+                        <p>⚡ Filter Speed: <span id="cc-speed">0 URLs/s</span></p>
+                    </div>
                 </div>
                 
                 <div id="harvest-results" style="margin-top: 15px; max-height: 300px; overflow-y: auto; background: gray; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 12px; display: none;">

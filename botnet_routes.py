@@ -69,6 +69,19 @@ harvester_state = {
     "delay_list": []  # Pagodo-style intelligent delay list
 }
 
+# Common Crawl Miner state
+cc_miner_state = {
+    "status": "idle",  # idle, running, completed
+    "shops_found": 0,
+    "warc_files_processed": 0,
+    "total_warc_files": 0,
+    "current_warc": "",
+    "recent_shops": [],
+    "stop_flag": False,
+    "download_progress": 0,  # MB downloaded
+    "filter_speed": 0  # URLs/second
+}
+
 # GHDB Categories (from Pagodo)
 GHDB_CATEGORIES = {
     "all": "all_google_dorks.txt",
@@ -352,6 +365,160 @@ def load_shodan_dorks(filename="inputDork/shodan_dorks.txt"):
         print(f"[WARNING] Shodan dorks file not found: {filename}")
     
     return []
+
+# ==== COMMON CRAWL MINER FUNCTIONS ====
+def fetch_warc_paths(crawl_id="CC-MAIN-2025-44", max_files=50):
+    """Fetch WARC file paths from Common Crawl index
+    
+    Args:
+        crawl_id: Common Crawl ID (format: CC-MAIN-YYYY-WW)
+        max_files: Maximum number of WARC files to process
+    
+    Returns:
+        list: WARC file paths
+    """
+    import gzip
+    
+    try:
+        url = f"https://data.commoncrawl.org/crawl-data/{crawl_id}/warc.paths.gz"
+        print(f"[CC] Fetching WARC paths from {crawl_id}...")
+        
+        response = requests.get(url, timeout=30)
+        if response.status_code != 200:
+            print(f"[ERROR] Failed to fetch WARC paths: HTTP {response.status_code}")
+            return []
+        
+        paths = gzip.decompress(response.content).decode().splitlines()
+        print(f"[✓] Found {len(paths)} WARC files in {crawl_id}")
+        
+        # Limit to max_files
+        limited_paths = paths[:max_files]
+        print(f"[✓] Will process {len(limited_paths)} WARC files")
+        
+        return limited_paths
+    except Exception as e:
+        print(f"[ERROR] fetch_warc_paths failed: {str(e)}")
+        return []
+
+def process_warc_file(path, patterns):
+    """Process a single WARC file and extract shop URLs
+    
+    Args:
+        path: WARC file path
+        patterns: List of byte patterns to search for
+    
+    Returns:
+        list: Found shop URLs
+    """
+    global cc_miner_state
+    
+    warc_url = f"https://data.commoncrawl.org/{path}"
+    cc_miner_state["current_warc"] = path.split('/')[-1]
+    shops_found = []
+    
+    try:
+        print(f"[CC] Processing {path.split('/')[-1]}...")
+        response = requests.get(warc_url, stream=True, timeout=600)
+        
+        bytes_downloaded = 0
+        start_time = time.time()
+        lines_processed = 0
+        
+        for line in response.iter_lines():
+            if cc_miner_state["stop_flag"]:
+                print(f"[CC] Stop flag detected, aborting {path.split('/')[-1]}")
+                break
+            
+            bytes_downloaded += len(line)
+            lines_processed += 1
+            
+            # Update progress every 10MB
+            if bytes_downloaded > 0 and bytes_downloaded % (10 * 1024 * 1024) == 0:
+                cc_miner_state["download_progress"] = bytes_downloaded / (1024 * 1024)
+                elapsed = time.time() - start_time
+                if elapsed > 0:
+                    cc_miner_state["filter_speed"] = int(lines_processed / elapsed)
+            
+            # Check for shop patterns
+            for pattern in patterns:
+                if pattern in line:
+                    try:
+                        url = line.decode('utf-8', errors='ignore').split()[0]
+                        if url.startswith('http'):
+                            shops_found.append(url)
+                            cc_miner_state["shops_found"] += 1
+                            cc_miner_state["recent_shops"].insert(0, url)
+                            
+                            # Keep only last 50 recent shops
+                            if len(cc_miner_state["recent_shops"]) > 50:
+                                cc_miner_state["recent_shops"] = cc_miner_state["recent_shops"][:50]
+                            
+                            # Save to database immediately
+                            check_and_insert_shop(url, "commoncrawl")
+                            print(f"[+] CC - Shop found: {url}")
+                            break
+                    except:
+                        continue
+        
+        cc_miner_state["warc_files_processed"] += 1
+        print(f"[✓] {path.split('/')[-1]}: Found {len(shops_found)} shops")
+        return shops_found
+        
+    except Exception as e:
+        print(f"[ERROR] process_warc_file failed for {path}: {str(e)}")
+        cc_miner_state["warc_files_processed"] += 1
+        return []
+
+def search_common_crawl(crawl_id, max_files, patterns, use_threading=True):
+    """Main Common Crawl search function
+    
+    Args:
+        crawl_id: Common Crawl ID
+        max_files: Max WARC files to process
+        patterns: List of patterns to search
+        use_threading: Enable multi-threading
+    """
+    global cc_miner_state
+    
+    # Fetch WARC paths
+    warc_paths = fetch_warc_paths(crawl_id, max_files)
+    if not warc_paths:
+        print("[ERROR] No WARC paths found")
+        return
+    
+    cc_miner_state["total_warc_files"] = len(warc_paths)
+    
+    if use_threading:
+        # Multi-threaded processing (5 concurrent downloads)
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            futures = {executor.submit(process_warc_file, path, patterns): path 
+                      for path in warc_paths}
+            
+            for future in as_completed(futures):
+                if cc_miner_state["stop_flag"]:
+                    print("[CC] Stop requested, cancelling remaining tasks...")
+                    executor.shutdown(wait=False, cancel_futures=True)
+                    break
+                
+                try:
+                    result = future.result()
+                except Exception as e:
+                    print(f"[ERROR] Thread exception: {str(e)}")
+    else:
+        # Sequential processing
+        for path in warc_paths:
+            if cc_miner_state["stop_flag"]:
+                break
+            process_warc_file(path, patterns)
+    
+    # Export results
+    output_file = "outputDork/shops_fresh_2025_commoncrawl.txt"
+    export_shops_to_file("commoncrawl", output_file)
+    
+    cc_miner_state["status"] = "completed"
+    print(f"[✓] Common Crawl mining completed: {cc_miner_state['shops_found']} shops")
 
 def get_proxy_pagodo_style(proxy_list):
     """Pagodo-style round-robin proxy rotation"""
@@ -804,10 +971,16 @@ async def start_dork_harvest(request: Dict):
     if request.get("engines", {}).get("shodan"):
         selected_engines.append("shodan")
     
+    # Check if Common Crawl is enabled
+    use_cc = request.get("use_cc", False)
+    
     if clear_results:
         # Clear mode: delete shops from database for selected engines
         for engine in selected_engines:
             clear_shops_by_engine(engine)
+        # Also clear Common Crawl if enabled
+        if use_cc:
+            clear_shops_by_engine("commoncrawl")
     else:
         # Append mode: SQLite handles duplicates automatically via UNIQUE constraint
         print(f"[✓] Append mode: SQLite will skip duplicates automatically")
@@ -831,26 +1004,28 @@ async def start_dork_harvest(request: Dict):
     harvester_state["delay_list"] = generate_delay_list(min_delay, max_delay, 20)
     print(f"[✓] Generated delay list: {min_delay}-{max_delay}s")
     
-    # Load dorks (GHDB or custom)
+    # Load dorks (GHDB or custom) - only if traditional engines selected
     use_ghdb = request.get("use_ghdb", False)
     ghdb_category = request.get("ghdb_category", "all")
     use_shodan = request.get("engines", {}).get("shodan", False)
+    dorks_to_use = []
     
-    if use_shodan:
-        # Shodan uses different dorks file (API-based queries)
-        dorks_to_use = load_shodan_dorks("inputDork/shodan_dorks.txt")
-        print(f"[✓] Using Shodan queries: {len(dorks_to_use)}")
-    elif use_ghdb:
-        dorks_to_use = load_dorks_from_file(
-            filename="inputDork/general_search_dorks.txt",
-            use_ghdb=True,
-            ghdb_category=ghdb_category
-        )
-        print(f"[✓] Using GHDB dorks: {len(dorks_to_use)} from category '{ghdb_category}'")
-    else:
-        dork_count = min(request.get("dork_count", 50), len(DORKS))
-        dorks_to_use = DORKS[:dork_count]
-        print(f"[✓] Using custom dorks: {len(dorks_to_use)}")
+    if selected_engines:  # Only load dorks if engines are selected
+        if use_shodan:
+            # Shodan uses different dorks file (API-based queries)
+            dorks_to_use = load_shodan_dorks("inputDork/shodan_dorks.txt")
+            print(f"[✓] Using Shodan queries: {len(dorks_to_use)}")
+        elif use_ghdb:
+            dorks_to_use = load_dorks_from_file(
+                filename="inputDork/general_search_dorks.txt",
+                use_ghdb=True,
+                ghdb_category=ghdb_category
+            )
+            print(f"[✓] Using GHDB dorks: {len(dorks_to_use)} from category '{ghdb_category}'")
+        else:
+            dork_count = min(request.get("dork_count", 50), len(DORKS))
+            dorks_to_use = DORKS[:dork_count]
+            print(f"[✓] Using custom dorks: {len(dorks_to_use)}")
     
     # Get actual dork count for response message
     actual_dork_count = len(dorks_to_use)
@@ -863,30 +1038,71 @@ async def start_dork_harvest(request: Dict):
     
     # Start threads
     def run_harvester():
-        threads = []
-        for dork in dorks_to_use:
-            if harvester_state["stop_flag"]:
-                break
+        # Run Common Crawl mining if enabled
+        use_cc = request.get("use_cc", False)
+        if use_cc:
+            print("[✓] Common Crawl mining enabled")
+            cc_crawl_id = request.get("cc_crawl_id", "CC-MAIN-2025-44")
+            cc_max_files = request.get("cc_max_files", 10)
+            cc_threading = request.get("cc_threading", True)
             
-            harvester_state["active_threads"] += 1
-            t = threading.Thread(target=harvest_dork, args=(dork, request))
-            t.daemon = True
-            t.start()
-            threads.append(t)
+            # Set CC state active
+            cc_miner_state["status"] = "running"
+            cc_miner_state["stop_flag"] = False
+            harvester_state["current_engine"] = "Common Crawl"
             
-            # Limit concurrent threads
-            if len([t for t in threads if t.is_alive()]) >= thread_count:
-                time.sleep(5)
+            # Define shop patterns for CC
+            patterns = [
+                b'catalogsearch/result/index',  # Magento
+                b'wc-ajax=add_to_cart',         # WooCommerce
+                b'myshopify.com',                # Shopify
+                b'/checkout',                    # Generic
+                b'route=product/product',        # OpenCart
+                b'/cart/add',                    # Generic cart
+                b'product_id=',                  # Generic product
+                b'/shop/',                       # Generic shop
+            ]
+            
+            try:
+                search_common_crawl(cc_crawl_id, cc_max_files, patterns, cc_threading)
+                harvester_state["shops_found"] += cc_miner_state["shops_found"]
+                print(f"[✓] Common Crawl completed: {cc_miner_state['shops_found']} shops found")
+            except Exception as e:
+                print(f"[ERROR] Common Crawl failed: {e}")
+            finally:
+                cc_miner_state["status"] = "idle"
         
-        # Wait for all threads to complete
-        for t in threads:
-            t.join()
+        # Run traditional dork harvesting if engines selected
+        if selected_engines:
+            threads = []
+            for dork in dorks_to_use:
+                if harvester_state["stop_flag"]:
+                    break
+                
+                harvester_state["active_threads"] += 1
+                t = threading.Thread(target=harvest_dork, args=(dork, request))
+                t.daemon = True
+                t.start()
+                threads.append(t)
+                
+                # Limit concurrent threads
+                if len([t for t in threads if t.is_alive()]) >= thread_count:
+                    time.sleep(5)
+            
+            # Wait for all threads to complete
+            for t in threads:
+                t.join()
         
         # Export shops from database to text files
         print("[✓] Harvesting completed. Exporting to files...")
         for engine in selected_engines:
             output_file = f"outputDork/shops_fresh_2025_{engine}.txt"
             export_shops_to_file(engine, output_file)
+        
+        # Export Common Crawl results if used
+        if request.get("use_cc", False):
+            export_shops_to_file("commoncrawl", "outputDork/shops_fresh_2025_commoncrawl.txt")
+            print("[✓] Exported Common Crawl results")
         
         harvester_state["status"] = "completed"
         harvester_state["active_threads"] = 0
@@ -896,32 +1112,145 @@ async def start_dork_harvest(request: Dict):
     bg_thread.daemon = True
     bg_thread.start()
     
+    # Build response message
+    message_parts = []
+    if actual_dork_count > 0:
+        message_parts.append(f"{actual_dork_count} dorks with {thread_count} threads")
+    if request.get("use_cc", False):
+        cc_max_files = request.get("cc_max_files", 10)
+        message_parts.append(f"Common Crawl ({cc_max_files} WARC files)")
+    
+    message = "Harvester started: " + " + ".join(message_parts) if message_parts else "Harvester started"
+    
     return {
         "status": "success",
-        "message": f"Dork harvester started with {actual_dork_count} dorks and {thread_count} threads"
+        "message": message
     }
 
 @router.post("/dork-harvest/stop")
 async def stop_dork_harvest():
-    """Stop dork harvesting"""
-    global harvester_state
+    """Stop dork harvesting (includes Common Crawl if running)"""
+    global harvester_state, cc_miner_state
     
     harvester_state["stop_flag"] = True
     harvester_state["status"] = "idle"
     
+    # Also stop Common Crawl if running
+    if cc_miner_state["status"] == "running":
+        cc_miner_state["stop_flag"] = True
+        cc_miner_state["status"] = "idle"
+    
+    total_shops = harvester_state["shops_found"] + cc_miner_state["shops_found"]
+    
     return {
         "status": "success",
         "message": "Harvester stopped",
-        "total_shops": harvester_state["shops_found"]
+        "total_shops": total_shops
     }
 
 @router.get("/dork-harvest/status")
 async def get_dork_harvest_status():
-    """Get current status of dork harvester"""
-    return {
+    """Get current status of dork harvester (includes Common Crawl if active)"""
+    response = {
         "status": harvester_state["status"],
-        "shops_found": harvester_state["shops_found"],
+        "shops_found": harvester_state["shops_found"] + cc_miner_state["shops_found"],
         "active_threads": harvester_state["active_threads"],
         "current_engine": harvester_state["current_engine"],
         "recent_shops": harvester_state["recent_shops"][:10]  # Last 10 shops
     }
+    
+    # Add CC-specific metrics if CC is active
+    if cc_miner_state["status"] == "running":
+        response["cc_active"] = True
+        response["cc_files_processed"] = cc_miner_state["warc_files_processed"]
+        response["cc_total_files"] = cc_miner_state["total_warc_files"]
+        response["cc_download_mb"] = cc_miner_state["download_progress"]
+        response["cc_filter_speed"] = cc_miner_state["filter_speed"]
+    else:
+        response["cc_active"] = False
+    
+    return response
+
+# ==== COMMON CRAWL MINER API ENDPOINTS ====
+@router.post("/cc/start")
+async def start_cc_miner(request: Dict):
+    """Start Common Crawl mining"""
+    global cc_miner_state
+    
+    if cc_miner_state["status"] == "running":
+        return {
+            "status": "error",
+            "message": "Common Crawl miner is already running"
+        }
+    
+    # Reset state
+    cc_miner_state = {
+        "status": "running",
+        "shops_found": 0,
+        "warc_files_processed": 0,
+        "total_warc_files": 0,
+        "current_warc": "",
+        "recent_shops": [],
+        "stop_flag": False,
+        "download_progress": 0,
+        "filter_speed": 0
+    }
+    
+    # Get config
+    crawl_id = request.get("crawl_id", "CC-MAIN-2025-44")
+    max_files = min(request.get("max_files", 50), 100)  # Safety limit
+    use_threading = request.get("use_threading", True)
+    
+    # Shop patterns to search for
+    patterns = [
+        b'catalogsearch/result/index',  # Magento
+        b'wc-ajax=add_to_cart',         # WooCommerce
+        b'myshopify.com',                # Shopify
+        b'/checkout',                    # Generic checkout
+        b'route=product/product',        # OpenCart
+        b'/cart/add',                    # Generic cart
+        b'product_id=',                  # Generic product
+        b'/shop/',                       # Generic shop
+    ]
+    
+    # Start mining in background thread
+    def run_miner():
+        search_common_crawl(crawl_id, max_files, patterns, use_threading)
+    
+    bg_thread = threading.Thread(target=run_miner)
+    bg_thread.daemon = True
+    bg_thread.start()
+    
+    return {
+        "status": "success",
+        "message": f"Common Crawl miner started: {crawl_id}, {max_files} WARC files"
+    }
+
+@router.post("/cc/stop")
+async def stop_cc_miner():
+    """Stop Common Crawl mining"""
+    global cc_miner_state
+    
+    cc_miner_state["stop_flag"] = True
+    cc_miner_state["status"] = "stopped"
+    
+    return {
+        "status": "success",
+        "message": "Common Crawl miner stopped",
+        "total_shops": cc_miner_state["shops_found"]
+    }
+
+@router.get("/cc/status")
+async def get_cc_miner_status():
+    """Get current status of Common Crawl miner"""
+    return {
+        "status": cc_miner_state["status"],
+        "shops_found": cc_miner_state["shops_found"],
+        "warc_files_processed": cc_miner_state["warc_files_processed"],
+        "total_warc_files": cc_miner_state["total_warc_files"],
+        "current_warc": cc_miner_state["current_warc"],
+        "download_progress": cc_miner_state["download_progress"],
+        "filter_speed": cc_miner_state["filter_speed"],
+        "recent_shops": cc_miner_state["recent_shops"][:10]
+    }
+

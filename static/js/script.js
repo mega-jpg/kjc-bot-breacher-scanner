@@ -467,12 +467,17 @@ async function startDorkHarvest() {
         use_ghdb: document.getElementById('use-ghdb')?.checked || false,
         ghdb_category: document.getElementById('ghdb-category')?.value || 'all',
         min_delay: parseInt(document.getElementById('min-delay')?.value || 15),
-        max_delay: parseInt(document.getElementById('max-delay')?.value || 45)
+        max_delay: parseInt(document.getElementById('max-delay')?.value || 45),
+        // Common Crawl mining
+        use_cc: document.getElementById('use-cc')?.checked || false,
+        cc_crawl_id: document.getElementById('cc-crawl-id')?.value || 'CC-MAIN-2025-44',
+        cc_max_files: parseInt(document.getElementById('cc-max-files')?.value || 10),
+        cc_threading: document.getElementById('cc-threading')?.checked || true
     };
     
     // Validation
-    if (!config.engines.duckduckgo && !config.engines.google && !config.engines.bing && !config.engines.yandex && !config.engines.shodan) {
-        showResult('docs-result', '❌ Please select at least one search engine', true);
+    if (!config.engines.duckduckgo && !config.engines.google && !config.engines.bing && !config.engines.yandex && !config.engines.shodan && !config.use_cc) {
+        showResult('docs-result', '❌ Please select at least one search engine or enable Common Crawl', true);
         return;
     }
     
@@ -557,6 +562,22 @@ function startPollingHarvest() {
                 document.getElementById('active-threads').textContent = data.active_threads || 0;
                 document.getElementById('current-engine').textContent = data.current_engine || 'N/A';
                 
+                // Update CC-specific stats if available
+                const ccMetrics = document.getElementById('cc-metrics');
+                if (data.cc_active) {
+                    if (ccMetrics) ccMetrics.style.display = 'block';
+                    
+                    const ccProgress = document.getElementById('cc-progress');
+                    const ccDownload = document.getElementById('cc-download');
+                    const ccSpeed = document.getElementById('cc-speed');
+                    
+                    if (ccProgress) ccProgress.textContent = `${data.cc_files_processed || 0} / ${data.cc_total_files || 0}`;
+                    if (ccDownload) ccDownload.textContent = `${data.cc_download_mb || 0} MB`;
+                    if (ccSpeed) ccSpeed.textContent = `${data.cc_filter_speed || 0} URLs/s`;
+                } else {
+                    if (ccMetrics) ccMetrics.style.display = 'none';
+                }
+                
                 // Update runtime
                 if (harvestStartTime) {
                     const elapsed = Math.floor((Date.now() - harvestStartTime) / 1000);
@@ -639,6 +660,16 @@ document.addEventListener('DOMContentLoaded', function() {
             shodanInfo.style.display = this.checked ? 'block' : 'none';
         });
     }
+    
+    // Toggle Common Crawl options visibility
+    const ccCheckbox = document.getElementById('use-cc');
+    const ccOptions = document.getElementById('cc-options');
+    
+    if (ccCheckbox && ccOptions) {
+        ccCheckbox.addEventListener('change', function() {
+            ccOptions.style.display = this.checked ? 'block' : 'none';
+        });
+    }
 });
 
 async function loadGHDBInfo() {
@@ -678,5 +709,161 @@ async function loadGHDBInfo() {
         }
     } catch (error) {
         infoDiv.innerHTML = `<p style="margin: 0; color: #ff6b6b;">❌ Failed to load GHDB info</p>`;
+    }
+}
+
+// ==== COMMON CRAWL MINER FUNCTIONS ====
+let ccMinerInterval = null;
+let ccMinerStartTime = null;
+let isCCMining = false;
+
+async function startCCMiner() {
+    const startBtn = document.getElementById('start-cc-btn');
+    const stopBtn = document.getElementById('stop-cc-btn');
+    const statsDiv = document.getElementById('cc-stats');
+    const resultsDiv = document.getElementById('cc-results');
+    
+    // Get configuration
+    const config = {
+        crawl_id: document.getElementById('cc-crawl-id')?.value || 'CC-MAIN-2025-44',
+        max_files: parseInt(document.getElementById('cc-max-files')?.value || 10),
+        use_threading: document.getElementById('cc-threading')?.checked || true
+    };
+    
+    // Validation
+    if (config.max_files < 1 || config.max_files > 100) {
+        showResult('docs-result', '❌ Max files must be between 1 and 100', true);
+        return;
+    }
+    
+    // Set UI state
+    startBtn.disabled = true;
+    startBtn.innerHTML = '🔄 Mining...';
+    stopBtn.disabled = false;
+    statsDiv.style.display = 'block';
+    resultsDiv.style.display = 'block';
+    resultsDiv.innerHTML = '<p style="color: #00ff00;">🚀 Initializing Common Crawl miner...</p>';
+    isCCMining = true;
+    ccMinerStartTime = Date.now();
+    
+    try {
+        // Start mining
+        const response = await fetch('/api/cc/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.status === 'success') {
+            document.getElementById('cc-status').innerHTML = '<span style="color: #00ff00;">🟢 Mining</span>';
+            showResult('docs-result', '✅ Common Crawl miner started!', false);
+            
+            // Start polling for updates
+            startPollingCCMiner();
+        } else {
+            throw new Error(result.message || 'Failed to start miner');
+        }
+    } catch (error) {
+        showResult('docs-result', '❌ Error: ' + error.message, true);
+        resetCCMinerUI();
+    }
+}
+
+async function stopCCMiner() {
+    const startBtn = document.getElementById('start-cc-btn');
+    const stopBtn = document.getElementById('stop-cc-btn');
+    
+    stopBtn.disabled = true;
+    stopBtn.innerHTML = '⏸️ Stopping...';
+    isCCMining = false;
+    
+    try {
+        const response = await fetch('/api/cc/stop', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            document.getElementById('cc-status').innerHTML = '<span style="color: #ff9500;">🟡 Stopped</span>';
+            showResult('docs-result', '✅ Miner stopped. Total shops: ' + result.total_shops, false);
+            clearInterval(ccMinerInterval);
+            resetCCMinerUI();
+        }
+    } catch (error) {
+        showResult('docs-result', '❌ Error stopping miner: ' + error.message, true);
+        resetCCMinerUI();
+    }
+}
+
+function startPollingCCMiner() {
+    // Update stats every 3 seconds
+    ccMinerInterval = setInterval(async () => {
+        if (!isCCMining) {
+            clearInterval(ccMinerInterval);
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/cc/status');
+            const data = await response.json();
+            
+            if (data.status === 'running') {
+                // Update stats
+                document.getElementById('cc-shops-found').textContent = data.shops_found || 0;
+                document.getElementById('cc-warc-progress').textContent = 
+                    `${data.warc_files_processed} / ${data.total_warc_files}`;
+                document.getElementById('cc-current-warc').textContent = 
+                    data.current_warc || 'N/A';
+                document.getElementById('cc-download-progress').textContent = 
+                    `${Math.round(data.download_progress || 0)} MB`;
+                document.getElementById('cc-filter-speed').textContent = 
+                    `${(data.filter_speed || 0).toLocaleString()} URLs/s`;
+                
+                // Display recent shops
+                if (data.recent_shops && data.recent_shops.length > 0) {
+                    const resultsDiv = document.getElementById('cc-results');
+                    let html = '';
+                    data.recent_shops.forEach(shop => {
+                        html = '<p style="color: #00ff00; margin: 2px 0;">[+] ' + shop + '</p>' + html;
+                    });
+                    resultsDiv.innerHTML = html + resultsDiv.innerHTML;
+                    
+                    // Keep only last 100 entries
+                    const lines = resultsDiv.querySelectorAll('p');
+                    if (lines.length > 100) {
+                        for (let i = 100; i < lines.length; i++) {
+                            lines[i].remove();
+                        }
+                    }
+                }
+            } else if (data.status === 'completed') {
+                document.getElementById('cc-status').innerHTML = '<span style="color: #00ff00;">✅ Completed</span>';
+                isCCMining = false;
+                clearInterval(ccMinerInterval);
+                showResult('docs-result', '✅ Mining completed! Total: ' + data.shops_found + ' shops', false);
+                resetCCMinerUI();
+            }
+        } catch (error) {
+            console.error('Polling error:', error);
+        }
+    }, 3000);
+}
+
+function resetCCMinerUI() {
+    const startBtn = document.getElementById('start-cc-btn');
+    const stopBtn = document.getElementById('stop-cc-btn');
+    
+    if (startBtn) {
+        startBtn.disabled = false;
+        startBtn.innerHTML = '🚀 Start Mining';
+    }
+    
+    if (stopBtn) {
+        stopBtn.disabled = true;
+        stopBtn.innerHTML = '⛔ Stop Mining';
     }
 }
